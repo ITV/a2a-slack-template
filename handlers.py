@@ -109,7 +109,7 @@ async def mykagent_command(
     # Immediately respond with the user's message and processing status
     initial_response = await client.chat_postMessage(
         channel=channel_id,
-        text=f"Hello <@{user_id}>! You've asked me: \"{text}\"\n\nProcessing your request...",
+        text=f"Hello <@{user_id}>! You've asked me: \"{text}\"\n\nProcessing your request, I'll reply in a thread :party_thread:",
     )
 
     # Add drumroll emoji reaction to the initial message
@@ -150,6 +150,7 @@ async def mykagent_command(
 
         await client.chat_postMessage(
             channel=channel_id,
+            thread_ts=initial_response["ts"],
             text=f"*Agent Response:*\n{formatted_response}",
         )
     except Exception as e:
@@ -169,6 +170,7 @@ async def mykagent_command(
 
         await client.chat_postMessage(
             channel=channel_id,
+            thread_ts=initial_response["ts"],
             text=f"❌ An error occurred while talking to kagent: {e}",
         )
 
