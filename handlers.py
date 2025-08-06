@@ -49,15 +49,21 @@ async def mykagent_command(
 ):
     await ack()
 
-
     user_id = context["user_id"]
     channel_id = context["channel_id"]
     text = command.get("text")
 
-    await client.chat_postMessage(
+    # Immediately respond with the user's message and processing status
+    initial_response = await client.chat_postMessage(
         channel=channel_id,
-        user=user_id,
-        text="Thinking...",
+        text=f"Hello <@{user_id}>! You've asked me: \"{text}\"\n\nProcessing your request...",
+    )
+
+    # Add drumroll emoji reaction to the initial message
+    await client.reactions_add(
+        channel=channel_id,
+        timestamp=initial_response["ts"],
+        name="drumroll"
     )
 
     # Check if the KAGENT_A2A_URL environment variable is set
@@ -66,7 +72,6 @@ async def mykagent_command(
         # TODO: Implement the logic for the /mykagent command
         await client.chat_postMessage(
             channel=channel_id,
-            user=user_id,
             text="Hello! Once you set the KAGENT_A2A_URL environment variable, you can use the /mykagent command.",
         )
         return
@@ -74,17 +79,41 @@ async def mykagent_command(
     # Invoke the KAGENT A2A API
     try:
         response = await invoke_a2a_agent(kagent_a2a_url, text, logger)
+
+        # Remove drumroll reaction and add success reaction
+        await client.reactions_remove(
+            channel=channel_id,
+            timestamp=initial_response["ts"],
+            name="drumroll"
+        )
+        await client.reactions_add(
+            channel=channel_id,
+            timestamp=initial_response["ts"],
+            name="success"
+        )
+
         await client.chat_postMessage(
             channel=channel_id,
-            user=user_id,
-            text=response,
+            text=f"*Agent Response:*\n{response}",
         )
     except Exception as e:
         logger.error(f"Error: {e}")
+
+        # Remove drumroll reaction and add burn-elmo reaction
+        await client.reactions_remove(
+            channel=channel_id,
+            timestamp=initial_response["ts"],
+            name="drumroll"
+        )
+        await client.reactions_add(
+            channel=channel_id,
+            timestamp=initial_response["ts"],
+            name="burn-elmo"
+        )
+
         await client.chat_postMessage(
             channel=channel_id,
-            user=user_id,
-            text=f"Occurred an error while talking to kagent: {e}",
+            text=f"❌ An error occurred while talking to kagent: {e}",
         )
 
 
