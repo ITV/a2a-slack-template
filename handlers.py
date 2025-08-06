@@ -179,4 +179,4 @@ def register_handlers(app: AsyncApp):
     """
 
     # Commands
-    app.command("/mykagent")(mykagent_command)
+    app.command("/k8s-helper")(mykagent_command)
