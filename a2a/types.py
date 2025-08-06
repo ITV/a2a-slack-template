@@ -72,7 +72,7 @@ class Message(BaseModel):
 
 class MessageResponse(BaseModel):
     contextId: str = ""
-    kind: Literal['message'] = 'message'
+    kind: str = "message"  # Make this more flexible to handle empty strings
     messageId: str
     parts: list[Part]
     role: Literal['user', 'agent']

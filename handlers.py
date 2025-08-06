@@ -4,6 +4,7 @@ from slack_sdk import WebClient
 from slack_bolt import Say, Ack, BoltContext
 import os
 import uuid
+import re
 from a2a.client import A2AClient
 from a2a.types import Message, TextPart, MessageSendParams, MessageResponse
 
@@ -41,7 +42,18 @@ async def invoke_a2a_agent(agent_url: str, input: str, logger: Logger):
     if response.result and response.result.parts:
         for part in response.result.parts:
             if hasattr(part, 'text'):
-                text += part.text
+                # Check if the response contains an error message
+                part_text = part.text
+                if "failed to invoke task:" in part_text and "Error code:" in part_text:
+                    # Extract the clean error message from the OpenAI error
+                    import re
+                    error_match = re.search(r"Error code: \d+ - \{'error': \{'message': \"([^\"]+)\"", part_text)
+                    if error_match:
+                        clean_error = error_match.group(1)
+                        raise Exception(f"Agent error: {clean_error}")
+                    else:
+                        raise Exception("Agent encountered an internal error")
+                text += part_text
     return text
 
 async def mykagent_command(
