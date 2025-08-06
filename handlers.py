@@ -8,6 +8,47 @@ import re
 from a2a.client import A2AClient
 from a2a.types import Message, TextPart, MessageSendParams, MessageResponse
 
+def format_response_for_slack(text):
+    """Format markdown text for better display in Slack."""
+    # Convert markdown tables to code blocks for better formatting
+    lines = text.split('\n')
+    formatted_lines = []
+    in_table = False
+    table_lines = []
+
+    for line in lines:
+        # Check if this is a table line (contains | and has multiple cells)
+        if '|' in line and line.count('|') >= 2:
+            if not in_table:
+                in_table = True
+                table_lines = []
+
+            # Skip separator lines with ---
+            if '---' not in line:
+                table_lines.append(line)
+        else:
+            # We've exited a table
+            if in_table:
+                in_table = False
+                if table_lines:
+                    # Add the table as a code block
+                    formatted_lines.append('```')
+                    formatted_lines.extend(table_lines)
+                    formatted_lines.append('```')
+                    table_lines = []
+
+            # Add the non-table line
+            formatted_lines.append(line)
+
+    # Handle case where text ends with a table
+    if in_table and table_lines:
+        formatted_lines.append('```')
+        formatted_lines.extend(table_lines)
+        formatted_lines.append('```')
+
+    return '\n'.join(formatted_lines)
+
+
 async def invoke_a2a_agent(agent_url: str, input: str, logger: Logger):
     """
     Invokes the A2A agent and returns the response.
@@ -104,9 +145,12 @@ async def mykagent_command(
             name="success"
         )
 
+        # Format the response for better Slack display
+        formatted_response = format_response_for_slack(response)
+
         await client.chat_postMessage(
             channel=channel_id,
-            text=f"*Agent Response:*\n{response}",
+            text=f"*Agent Response:*\n{formatted_response}",
         )
     except Exception as e:
         logger.error(f"Error: {e}")
